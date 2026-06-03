@@ -1,0 +1,16 @@
+
+> shakeweight-cod-funnel@1.0.0 dev
+> next dev --port 3001
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.106:3001
+- Environments: .env.local
+✓ Ready in 1413ms
+
+ GET / 200 in 112ms (next.js: 29ms, application-code: 83ms)
+ GET / 200 in 1208ms (next.js: 626ms, application-code: 582ms)
+ GET /checkout?productName=shakeweight&flavor=Chocolate&quantity=1&pricePerPiece=1499&deliveryFee=100&totalPrice=1599 200 in 87ms (next.js: 45ms, application-code: 42ms)
+ POST /api/order 200 in 12.2s (next.js: 2.3s, application-code: 9.9s)
+ GET /thank-you?orderId=SW-20260603133902-0L21GM&productName=shakeweight&flavor=Chocolate&quantity=1&totalPrice=1599 200 in 125ms (next.js: 59ms, application-code: 65ms)
+ GET / 200 in 32ms (next.js: 7ms, application-code: 25ms)
