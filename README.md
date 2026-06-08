@@ -47,6 +47,17 @@ FRONTEND_URL=http://localhost:3000
 
 For Gmail SMTP, use a Gmail App Password for `SMTP_PASS`. Do not use your normal Gmail password.
 
+On Vercel, the email system also accepts these aliases if you prefer the screenshot-style variable names:
+
+```bash
+SENDER_EMAIL=professionalshalinigupta@gmail.com
+GMAIL_USER=professionalshalinigupta@gmail.com
+GMAIL_APP_PASSWORD=your_google_app_password
+NEXT_PUBLIC_BRAND_NAME=shakeweight
+```
+
+`SMTP_USER` and `GMAIL_USER` mean the same thing. `SMTP_PASS` and `GMAIL_APP_PASSWORD` mean the same thing. `EMAIL_FROM` and `SENDER_EMAIL` are both supported.
+
 ## Google Spreadsheet Setup
 
 1. Create or open your Google Spreadsheet.

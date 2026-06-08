@@ -19,6 +19,14 @@ function isAllowedOrigin(request: Request) {
   return origin === frontendUrl;
 }
 
+function logServerError(message: string, error: unknown, extra?: Record<string, string>) {
+  console.error(message, {
+    ...extra,
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined
+  });
+}
+
 export async function POST(request: Request) {
   try {
     if (!isAllowedOrigin(request)) {
@@ -57,12 +65,12 @@ export async function POST(request: Request) {
     try {
       await sendOrderEmails(order);
     } catch (emailError) {
-      console.error("Order saved, but email notification failed:", emailError);
+      logServerError("Order saved, but email notification failed.", emailError, { orderId: order.orderId });
       return NextResponse.json(
         {
           success: false,
           orderId: order.orderId,
-          error: "Order was saved, but email notification failed. Please check your email credentials."
+          error: "Your order was received, but we could not send the confirmation email right now. Please contact support with your order ID."
         },
         { status: 502 }
       );
@@ -70,11 +78,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, orderId: order.orderId });
   } catch (error) {
-    console.error("Order submission failed:", error);
+    logServerError("Order submission failed.", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Order submission failed. Please try again."
+        error: "We could not submit your order right now. Please try again or contact support."
       },
       { status: 500 }
     );

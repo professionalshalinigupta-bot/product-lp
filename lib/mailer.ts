@@ -2,45 +2,84 @@ import nodemailer from "nodemailer";
 import type { CompleteOrder } from "@/lib/order-schema";
 import { businessOrderEmail, customerOrderEmail } from "@/lib/email-templates";
 
-function requireEnv(name: string) {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+type SmtpConfig = {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  businessEmail: string;
+  emailFrom: string;
+  brandName: string;
+};
+
+function firstEnv(names: string[]) {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
   }
+  return "";
+}
+
+function requireAnyEnv(names: string[]) {
+  const value = firstEnv(names);
+  if (!value) throw new Error(`Missing required email environment variable: ${names.join(" or ")}`);
   return value;
 }
 
-function transporter() {
+function smtpConfig(): SmtpConfig {
+  const portText = firstEnv(["SMTP_PORT"]) || "465";
+  const port = Number(portText);
+
+  if (!Number.isInteger(port) || port <= 0) {
+    throw new Error("Invalid SMTP_PORT. Use 465 for Gmail SSL or 587 for STARTTLS.");
+  }
+
+  const user = requireAnyEnv(["SMTP_USER", "GMAIL_USER"]);
+  const businessEmail = requireAnyEnv(["BUSINESS_EMAIL"]);
+  const senderEmail = firstEnv(["EMAIL_FROM", "SENDER_EMAIL"]) || user;
+
+  return {
+    host: firstEnv(["SMTP_HOST"]) || "smtp.gmail.com",
+    port,
+    secure: port === 465,
+    user,
+    pass: requireAnyEnv(["SMTP_PASS", "GMAIL_APP_PASSWORD"]),
+    businessEmail,
+    emailFrom: senderEmail.includes("<") ? senderEmail : `${firstEnv(["BRAND_NAME", "NEXT_PUBLIC_BRAND_NAME"]) || "shakeweight"} <${senderEmail}>`,
+    brandName: firstEnv(["BRAND_NAME", "NEXT_PUBLIC_BRAND_NAME"]) || "shakeweight"
+  };
+}
+
+function transporter(config: SmtpConfig) {
   return nodemailer.createTransport({
-    host: requireEnv("SMTP_HOST"),
-    port: Number(requireEnv("SMTP_PORT")),
-    secure: Number(process.env.SMTP_PORT) === 465,
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
     auth: {
-      user: requireEnv("SMTP_USER"),
-      pass: requireEnv("SMTP_PASS")
+      user: config.user,
+      pass: config.pass
     }
   });
 }
 
 export async function sendOrderEmails(order: CompleteOrder) {
-  const brandName = process.env.BRAND_NAME || "shakeweight";
-  const businessEmail = requireEnv("BUSINESS_EMAIL");
-  const emailFrom = requireEnv("EMAIL_FROM");
-  const mailer = transporter();
+  const config = smtpConfig();
+  const mailer = transporter(config);
 
   await mailer.sendMail({
-    from: emailFrom,
-    to: businessEmail,
+    from: config.emailFrom,
+    to: config.businessEmail,
     replyTo: order.email,
     subject: `New Product Order Received - ${order.orderId}`,
-    html: businessOrderEmail(order, brandName)
+    html: businessOrderEmail(order, config.brandName)
   });
 
   await mailer.sendMail({
-    from: emailFrom,
+    from: config.emailFrom,
     to: order.email,
-    replyTo: businessEmail,
-    subject: `Your Order Has Been Received - ${brandName}`,
-    html: customerOrderEmail(order, brandName, businessEmail)
+    replyTo: config.businessEmail,
+    subject: `Your Order Has Been Received - ${config.brandName}`,
+    html: customerOrderEmail(order, config.brandName, config.businessEmail)
   });
 }
