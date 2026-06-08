@@ -13,12 +13,34 @@ type SmtpConfig = {
   brandName: string;
 };
 
+export type EmailEnvStatus = {
+  smtpHost: boolean;
+  smtpPort: boolean;
+  smtpUser: boolean;
+  smtpPass: boolean;
+  businessEmail: boolean;
+  senderEmail: boolean;
+  brandName: boolean;
+};
+
 function firstEnv(names: string[]) {
   for (const name of names) {
     const value = process.env[name]?.trim();
     if (value) return value;
   }
   return "";
+}
+
+export function emailEnvStatus(): EmailEnvStatus {
+  return {
+    smtpHost: Boolean(firstEnv(["SMTP_HOST"])),
+    smtpPort: Boolean(firstEnv(["SMTP_PORT"])),
+    smtpUser: Boolean(firstEnv(["SMTP_USER", "GMAIL_USER"])),
+    smtpPass: Boolean(firstEnv(["SMTP_PASS", "GMAIL_APP_PASSWORD"])),
+    businessEmail: Boolean(firstEnv(["BUSINESS_EMAIL"])),
+    senderEmail: Boolean(firstEnv(["EMAIL_FROM", "SENDER_EMAIL"])),
+    brandName: Boolean(firstEnv(["BRAND_NAME", "NEXT_PUBLIC_BRAND_NAME"]))
+  };
 }
 
 function requireAnyEnv(names: string[]) {
@@ -61,6 +83,19 @@ function transporter(config: SmtpConfig) {
       pass: config.pass
     }
   });
+}
+
+export async function verifyEmailTransport() {
+  const config = smtpConfig();
+  const mailer = transporter(config);
+  await mailer.verify();
+
+  return {
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    userDomain: config.user.split("@")[1] || "unknown"
+  };
 }
 
 export async function sendOrderEmails(order: CompleteOrder) {
